@@ -46,7 +46,7 @@ NTSTATUS AddFilter(PDRIVER_OBJECT DirverObject, PDEVICE_OBJCET pdo)
 		&kbdFilter);
 	//Set extension of the filter device
 	PKBD_FILTER_EXTENSION filterExt;
-	filterExt = kbdFilter->DeviceExtension;
+	filterExt = (PKBD_FILTER_EXTENSION)kbdFilter->DeviceExtension;
 	//Attach the filter device to the device stack
 	IoAttachDeviceToDeviceStackSafe(
 		kbdFilter,
@@ -68,9 +68,38 @@ NTSTATUS AddFilter(PDRIVER_OBJECT DirverObject, PDEVICE_OBJCET pdo)
 	return status;
 }
 
+NTSTATUS DefaultDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+{
+	IoSkipCurrentIrpStackLocation(Irp);
+
+	return IoCallDriver((PKBD_FILTER_EXTENSION)(DeviceObject->DeviceExtension)->LowerDeviceObject，Irp);
+}
+
 NTSTATUS PnpDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
 	NTSTATUS status;
+	
+	PKBD_FILTER_EXTENSION filterExt;
+	filterExt = (PKBD_FILTER_EXTENSION)DeviceObject->DeviceExtension;
+
+	PIO_STACK_LOACTION IoStack = IoGetCurrentIrpStackLoacation(Irp);
+
+	switch(IoStack->MinorFunction)
+	{
+		case IRP_MN_REMOVE_DEVICE:
+			//Transfer the IRP at first
+			IoSkipCurrentIrpStackLocation(Irp);
+			IoCallDriver(filterExt->LowerDeviceObject, Irp);
+
+			//Detach and delete the device
+			IoDetachDevice(filterExt->LowerDeviceObject);
+			IoDeleteDevice(DeviceObject);
+			status = STATUS_SUCCESS;
+		default:
+			IoSkipCurrentIrpStackLocation(Irp);
+			status = IoCallDriver(filterExt->LowerDeviceObject, Irp);
+	}	
+	return status;
 }
 
 NTSTATUS PowerDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
@@ -81,7 +110,7 @@ NTSTATUS PowerDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 NTSTATUS FilterUnload(PDRIVER_OBJECT DriverObject)
 {
 	NTSTATUS status;
-	//There has no need to process the unload
+	//There is no need to process the unload
 	status = STATUS_SUCCESS;
 	return status;
 }
