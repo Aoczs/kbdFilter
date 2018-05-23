@@ -27,4 +27,4 @@ NTSTATUS ReadDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 NTSTATUS ReadComplete(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context);
 
 NTSTATUS AddFilter(PDRIVER_OBJECT DriverObject, PDEIVE_OBJECT pdo);
-NTSTATUS FilterUnload(PDRIVER_OBJECT DriverObject);
+VOID FilterUnload(PDRIVER_OBJECT DriverObject);

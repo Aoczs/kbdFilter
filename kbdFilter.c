@@ -113,13 +113,10 @@ NTSTATUS PowerDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	return status;
 }
 
-NTSTATUS FilterUnload(PDRIVER_OBJECT DriverObject)
+VOID FilterUnload(PDRIVER_OBJECT DriverObject)
 {
-	NTSTATUS status;
 	//There is no need to process the unload?
-
-	status = STATUS_SUCCESS;
-	return status;
+	KdPrint(("Unload"));
 }
 
 NTSTATUS ReadDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
