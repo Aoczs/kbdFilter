@@ -1,0 +1,6 @@
+;
+; kbdFilter.inf
+;
+
+[version]
+Signaturn="$WINDOWS NT$"

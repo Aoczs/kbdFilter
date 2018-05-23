@@ -105,12 +105,60 @@ NTSTATUS PnpDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 NTSTATUS PowerDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
 	NTSTATUS status;
+
+	PoStartNextPowerIrp(Irp);
+	IoSkipCurrentIrpStackLocation(Irp);
+
+	status = PoCallDriver(((PKBD_FILTER_EXTENSION)DeviceObject->DeviceExtension)->LowerDeviceObject, Irp);
+	return status;
 }
 
 NTSTATUS FilterUnload(PDRIVER_OBJECT DriverObject)
 {
 	NTSTATUS status;
-	//There is no need to process the unload
+	//There is no need to process the unload?
+
 	status = STATUS_SUCCESS;
 	return status;
+}
+
+NTSTATUS ReadDispatch(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+{
+	NTSTATUS status;
+	PKBD_FILTER_EXTENSION filterExt;
+	filterExt = (PKBD_FILTER_EXTENSION)DeviceObject->DeviceExtension;
+
+	(filterExt->CountNum)++;
+
+	IoCopyCurrentIrpStackLocationToNext(Irp);
+	IoSetCompletionRoutine(Irp, ReadComplete, DeviceObject, TRUE, TRUE, TRUE);
+
+	status = IoCallDriver(filterExt->LowerDeviceObject, Irp);
+	return status;
+}
+
+NTSTATUS ReadComplete(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context)
+{
+	PUCHAR buf;
+	ULONG buf_len;
+
+	if(NT_SUCCESS(Irp->IoStatus.Status))
+	{
+		//Get buffer
+		buf = Irp->AssociatedIrp.SystemBuffer;
+		buf_len = Irp->IoStatus.Information;
+
+		//Process the buffer
+		for(ULONG i = 0; i < buf_len, i++)
+		{
+			DbgPrint("The Key is: %2x\r\n", buf[i]);
+		}
+	}
+
+	if(Irp->PendingReturned)
+	{
+		IoMarkIrpPending(Irp);
+	}
+
+	return Irp->IoStatus.Status;
 }

@@ -13,6 +13,8 @@ typedef struct _KBD_FILTER_EXT
 	PDEVICE_OBJECT Pdo;
 	//Symbolic name
 	UNICODE_STRING SymbolicName;
+	//Number of the "I/RP_MJ_READ" Irp
+	ULONG CountNum = 0;
 
 }KBD_FILTER_EXT, *PKBD_FILTER_EXT;
 
